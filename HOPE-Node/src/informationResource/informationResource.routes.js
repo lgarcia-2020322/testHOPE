@@ -1,0 +1,1 @@
+//InformationResource routes
