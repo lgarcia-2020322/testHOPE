@@ -80,44 +80,24 @@ export const getPatientById = async (req, res) => {
 }
 
 // Actualizar datos clínicos
-export const updatePatient = async (req, res) => {
+export const updatePatient= async (req, res) => {
   try {
     const { id } = req.params
     const data = req.body
 
-    const updated = await Patient.findByIdAndUpdate
-      (
-        id,
-        data,
-        { new: true }
-      )
+    const updated = await Patient.findByIdAndUpdate(id, {
+      bloodType: data.bloodType,
+      allergy: data.allergy,
+      chronicDisease: data.chronicDisease
+    }, { new: true })
 
-    if (!updated) return res.status(404).send
-      (
-        {
-          success: false,
-          message: 'Patient not found or not updated'
-        }
-      )
+    if (!updated) {
+      return res.status(404).send({ success: false, message: 'Paciente no encontrado' })
+    }
 
-    return res.send
-      (
-        {
-          success: true,
-          message: 'Patient updated successfully',
-          updated
-        }
-      )
-  } catch (error) {
-    console.error(error)
-    return res.status(500).send
-      (
-        {
-          success: false,
-          message: 'Error updating patient',
-          error
-        }
-      )
+    return res.send({ success: true, message: 'Datos clínicos actualizados', patient: updated })
+  } catch (err) {
+    return res.status(500).send({ success: false, message: 'Error al actualizar', error: err })
   }
 }
 
@@ -125,39 +105,32 @@ export const updatePatient = async (req, res) => {
 export const deletePatient = async (req, res) => {
   try {
     const { id } = req.params
+
+    // Buscar al paciente
     const patient = await Patient.findById(id)
+    if (!patient)
+      return res.status(404).send({
+        success: false,
+        message: 'Paciente no encontrado'
+      })
 
-    if (!patient) return res.status(404).send
-      (
-        {
-          success: false,
-          message: 'Patient not found'
-        }
-      )
+    // Cambiar el estado del usuario relacionado
+    await User.findByIdAndUpdate(patient.user, { status: false })
 
-    await User.findByIdAndUpdate
-      (
-        patient.user,
-        { status: false }
-      )
+    // Eliminar al paciente (opcional: si no quieres borrarlo físicamente, comenta esta línea)
+    await Patient.findByIdAndDelete(id)
 
-    return res.send
-      (
-        {
-          success: true,
-          message: 'Patient deactivated successfully'
-        }
-      )
+    return res.send({
+      success: true,
+      message: 'Paciente eliminado correctamente'
+    })
   } catch (error) {
     console.error(error)
-    return res.status(500).send
-      (
-        {
-          success: false,
-          message: 'Error deleting patient',
-          error
-        }
-      )
+    return res.status(500).send({
+      success: false,
+      message: 'Error al eliminar paciente',
+      error
+    })
   }
 }
 
